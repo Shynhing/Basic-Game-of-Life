@@ -1,110 +1,83 @@
-var canvas=document.getElementById("playground");
-var ctx=canvas.getContext("2d");
+const canvas=document.getElementById("playground");
+const ctx=canvas.getContext("2d");
 
-function drawGrid(){
-    for(let i=0;i<=40;i++){
-        ctx.moveTo(i*10,0);
-        ctx.lineTo(i*10,400);
-        ctx.stroke();
-        ctx.moveTo(0,i*10);
-        ctx.lineTo(400,i*10);
-        ctx.stroke();
-    }
-}
-drawGrid();
+canvas.width=1000;
+canvas.height=1000;
+const size=5;
+const col=canvas.width/size;
+const row=canvas.height/size;
+
 
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
-}
+  }
+  
 
-
-
-var grid=new Array(40);
-
-for (var i=0;i<grid.length;i++){
-    grid[i]=new Array(40);
-}
-
-for(let i=0;i<40;i++){
-    for(let j=0;j<40;j++){
-        grid[i][j]=0;
-    }
-}
-
-for(let i=0;i<200;i++){
-    var x=getRandomInt(40);
-    var y=getRandomInt(40);
-    grid[x][y]=1;
-}
-
-function neighCount(x,y){
-    var nbNeigh=0;
-    if(x-1>0 && y-1>0 && grid[x-1][y-1]==1){
-        nbNeigh++;
-    }
-    if(y-1>0 && grid[x][y-1]==1){
-        nbNeigh++;
-    }
-    if(x+1<40 && y-1>0 && grid[x+1][y-1]==1){
-        nbNeigh++;
-    }
-    if(x-1>0 && grid[x-1][y]==1){
-        nbNeigh++;
-    }
-    if(x+1<40 && grid[x+1][y]==1){
-        nbNeigh++;
-    }
-    if(x-1>0 && y+1<40 && grid[x-1][y+1]==1){
-        nbNeigh++;
-    }
-    if(y+1<40 && grid[x][y+1]==1){
-        nbNeigh++;
-    }
-    if(x+1<40 && y+1<40 && grid[x+1][y+1]==1){
-        nbNeigh++;
-    }
-    return nbNeigh;
-}
-
-for(let i=0;i<40;i++){
-    for(let j=0;j<40;j++){
-        if(grid[i][j]==1){
-            ctx.fillStyle="black";
-            ctx.fillRect(i*10,j*10,10,10);
+function initializeGrid(col,row){
+    var grid=new Array(col).fill(null);
+    for(let i=0;i<col;i++){
+        grid[i]=new Array(row).fill(0);
+        for(let j=0;j<row;j++){
+            grid[i][j]=getRandomInt(2);
         }
     }
+    return grid;
 }
-let iter=0;
-function play(){
-    iter+=1;
-    console.log(iter);
-    for(let i=0;i<40;i++){
-        for(let j=0;j<40;j++){
-                neighCount(i,j);
-                if(grid[i][j]==1 && (neighCount(i,j)==2 || neighCount(i,j)==3) ){
-                    grid[i][j]=1;
-                }
-                else if(grid[i][j]==0 && neighCount(i,j)==3){
-                    grid[i][j]=1;
-                }
-                else{
-                    grid[i][j]=0;
+
+let grid=initializeGrid(col,row);
+
+requestAnimationFrame(redraw);
+
+function redraw(){
+    grid=update(grid);
+    draw(grid);
+    setTimeout(() => {
+    requestAnimationFrame(redraw);
+    },1000/10);
+}
+
+function update(grid){
+    const nextGen=grid.map(arr=>[...arr]);
+    for(let i=0;i<grid.length;i++){
+        for(let j=0;j<grid[i].length;j++){
+            const curCell=grid[i][j];
+            var nbNeigh=0;
+            for(let k=-1;k<2;k++){
+                for(let l=-1;l<2;l++){
+                    if(k==0 && l==0){
+                        continue;
+                    }
+                    if(!(i+k<0 || j+l<0) && !(i+k>=grid.length || j+l>=grid[i].length)){
+                        nbNeigh+=grid[i+k][j+l];
+                    }
                 }
             }
-        }
-    for(let i=0;i<40;i++){
-        for(let j=0;j<40;j++){
-            if(grid[i][j]==1){
-                ctx.fillStyle="black";
-                ctx.fillRect(i*10,j*10,10,10);
+            if(grid[i][j]==1 && (nbNeigh==2 || nbNeigh==3)){
+                nextGen[i][j]=1;
             }
-            else{                
-                ctx.fillStyle="white";
-                ctx.fillRect(i*10,j*10,10,10);}
+            else if(grid[i][i]==0 && nbNeigh==3){
+                nextGen[i][j]=1;
+            }
+            else{
+                nextGen[i][j]=0;
+            }
         }
     }
-    drawGrid();
+    return nextGen;
+}
+
+function draw(grid){
+    for(let i=0;i<col;i++){
+        for(let j=0;j<row;j++){
+            var cell=grid[i][j];
+            ctx.fillStyle=cell ? "black" : "white";
+            ctx.fillRect(i*size,j*size,size,size);
+            ctx.beginPath();
+            ctx.rect(i*size,j*size,size,size);
+            ctx.strokeStyle="black";
+            ctx.stroke();
+        }
+    }
 }
 
 
-setInterval(play,10);
